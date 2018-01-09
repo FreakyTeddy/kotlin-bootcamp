@@ -3,12 +3,18 @@ package com.example.lgarbarini.kotlinbootcamp2
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.example.lgarbarini.kotlinbootcamp2.api.RestApi
+import com.example.lgarbarini.kotlinbootcamp2.api.categories.CategoriesResponseDto
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import kotlinx.android.synthetic.main.note_list_item.view.*
@@ -16,6 +22,7 @@ import kotlinx.android.synthetic.main.note_list_item.view.*
 class MainActivity : AppCompatActivity() {
 
     private val noteList: MutableList<Note> = ArrayList()
+    private var disposable: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +36,13 @@ class MainActivity : AppCompatActivity() {
         noteListView.adapter = NoteAdapter(noteList) {
             startActivity(Intent(this, NoteDetailActivity::class.java).putExtra("note_detail", it))
         }
+
+        loadNotesFromApi()
+    }
+
+    override fun onDestroy() {
+        disposable?.dispose()
+        super.onDestroy()
     }
 
     private fun addNewNote() {
@@ -39,9 +53,8 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1234 && resultCode == Activity.RESULT_OK) {
             val note = data!!.getParcelableExtra<Note>("new_note")
-            noteList.add(note)
-            //Snackbar.make(coordinator, "Nueva tarea: ${note.name}", Toast.LENGTH_SHORT).show()
-            noteListView.adapter.notifyItemInserted(noteList.size - 1)
+            noteList.add(0, note)
+            noteListView.adapter.notifyDataSetChanged()
         }
     }
 
@@ -69,6 +82,28 @@ class MainActivity : AppCompatActivity() {
             noteTime.text = note.createdDate
             setOnClickListener { listener(note) }
         }
+    }
+
+    private fun loadNotesFromApi() {
+        disposable = RestApi().loadNotes()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        { result -> showCategoriesAsNotes(result) },
+                        { error -> showLoadingError(error.message ?: "unknown") }
+                )
+    }
+
+    private fun showCategoriesAsNotes(categories: CategoriesResponseDto) {
+        categories.children_categories.map { childrenCategoryDto ->
+            noteList.add(Note(childrenCategoryDto.name, childrenCategoryDto.id, "Total: ${childrenCategoryDto.total_items_in_this_category}"))
+        }
+
+        noteListView.adapter.notifyDataSetChanged()
+    }
+
+    private fun showLoadingError(errorMessage: String) {
+        Snackbar.make(coordinator, "No se pudo cargar notas desde la red. Error: $errorMessage", Snackbar.LENGTH_LONG).show()
     }
 
     /*
