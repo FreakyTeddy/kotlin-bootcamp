@@ -1,19 +1,17 @@
 package com.example.lgarbarini.kotlinbootcamp2
 
 import android.app.Activity
-import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.Menu
-import android.view.MenuItem
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import kotlinx.android.synthetic.main.note_list_item.view.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,7 +25,10 @@ class MainActivity : AppCompatActivity() {
 
         title = "Kotlin notes"
 
-        noteListView.adapter
+        noteListView.layoutManager = LinearLayoutManager(this)
+        noteListView.adapter = NoteAdapter(noteList) {
+            startActivity(Intent(this, NoteDetailActivity::class.java).putExtra("note_detail", it))
+        }
     }
 
     private fun addNewNote() {
@@ -39,18 +40,19 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == 1234 && resultCode == Activity.RESULT_OK) {
             val note = data!!.getParcelableExtra<Note>("new_note")
             noteList.add(note)
-            Snackbar.make(coordinator, "Nueva tarea: ${note.name}", Toast.LENGTH_SHORT).show()
+            //Snackbar.make(coordinator, "Nueva tarea: ${note.name}", Toast.LENGTH_SHORT).show()
+            noteListView.adapter.notifyItemInserted(noteList.size - 1)
         }
     }
 
-    class NoteAdapter(val notes: List<Note>) : RecyclerView.Adapter<NoteViewHolder>() {
+    class NoteAdapter(private val notes: List<Note>, private val listener: (Note) -> Unit) : RecyclerView.Adapter<NoteViewHolder>() {
 
         override fun onBindViewHolder(holder: NoteViewHolder?, position: Int) {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            holder?.bind(notes[position], listener)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): NoteViewHolder {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            return NoteViewHolder(LayoutInflater.from(parent?.context).inflate(R.layout.note_list_item, parent, false))
         }
 
         override fun getItemCount(): Int {
@@ -61,6 +63,12 @@ class MainActivity : AppCompatActivity() {
 
     class NoteViewHolder(itemView: View?) : RecyclerView.ViewHolder(itemView) {
 
+
+        fun bind(note: Note, listener: (Note) -> Unit) = with(itemView) {
+            noteTitle.text = note.name
+            noteTime.text = note.createdDate
+            setOnClickListener { listener(note) }
+        }
     }
 
     /*

@@ -21,6 +21,8 @@
         </activity>
         <activity android:name=".NewNoteActivity">
         </activity>
+        <activity android:name=".NoteDetailActivity">
+        </activity>
     </application>
 
 </manifest>

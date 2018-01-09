@@ -2,8 +2,8 @@ package com.example.lgarbarini.kotlinbootcamp2
 
 import android.app.Activity
 import android.content.Intent
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_new_note.*
 import java.util.*
 
